@@ -1,0 +1,117 @@
+---
+title: "Untitled"
+author: "Alex Greenman"
+date: "March 20, 2019"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, include=FALSE}
+library(dplyr)
+library(rvest)
+library(tidyverse)
+library(GGally)
+library(mgcv)
+library(tree)
+library(MASS)
+library(car)
+library(ggfortify)
+```
+
+```{r}
+dat<-read.csv("2019_03_05_2019_Base_Sales_CAMA.csv")
+
+#Filter data from only Market Model/Neighborhood 7
+filtered_dat<-dat[dat$Market.Model == 7,]
+
+
+#Pick all Quantitative x's to do MLR with Forward Elimination on - disregard categorical explanatory variables:
+quant_dat_subset<-filtered_dat[,c(13,16,20,22,23,24,25,26,35,36,37,38,39,43,44,45,52)]
+quant_dat_subset[is.na(quant_dat_subset)]<-0
+quant_dat_subset<-quant_dat_subset[-c(465,478,507,654,655,656),]
+
+
+```
+
+
+```{r}
+#BEGIN FORWARD SELECTION MODELLING PROCESS:
+
+valmodel.0 <- lm(quant_dat_subset$Amount~1, data=quant_dat_subset)
+summary(valmodel.0)
+
+#Intercept-Only Model is inadequate for reliable prediction, start forward selection:
+add1(valmodel.0,scope=.~.+Land.SqFt+Arch.Style+Year.Built+Remodel.Year+Full.Bath+Half.Bath+X..Rooms+X..Beds+Bsmt.Area+FBsmt.Area+Finished.Garden.Area+X1st.Floor.Area+X2nd.Floor.Area+Total.Area+Att.Garage+Det.Garage,test="F")
+
+#Update model with largest imporvement - Total.Area has largest F-value, add to model:
+valmodel.1 <- update(valmodel.0,formula=.~.+Total.Area)
+summary(valmodel.1)
+
+#Re-run
+add1(valmodel.1,scope=.~.+Land.SqFt+Arch.Style+Year.Built+Remodel.Year+Full.Bath+Half.Bath+X..Rooms+X..Beds+Bsmt.Area+FBsmt.Area+Finished.Garden.Area+X1st.Floor.Area+X2nd.Floor.Area+Att.Garage+Det.Garage,test="F")
+
+#Update model with largest improvement - Bsmt.Area has largest F-value, add to model:
+valmodel.2 <- update(valmodel.1,formula=.~.+Bsmt.Area)
+summary(valmodel.2)
+
+#Re-run
+add1(valmodel.2,scope=.~.+Land.SqFt+Arch.Style+Year.Built+Remodel.Year+Full.Bath+Half.Bath+X..Rooms+X..Beds+FBsmt.Area+Finished.Garden.Area+X1st.Floor.Area+X2nd.Floor.Area+Att.Garage+Det.Garage,test="F")
+
+#Update model with largest improvement - Det.Garage has largest F-value, add to model:
+valmodel.3 <- update(valmodel.2,formula=.~.+Det.Garage)
+summary(valmodel.3)
+
+#Re-run
+add1(valmodel.3,scope=.~.+Land.SqFt+Arch.Style+Year.Built+Remodel.Year+Full.Bath+Half.Bath+X..Rooms+X..Beds+FBsmt.Area+Finished.Garden.Area+X1st.Floor.Area+X2nd.Floor.Area+Att.Garage,test="F")
+
+#Update model with largest improvement - Att. Garage has largest F-value, add to model:
+valmodel.4 <- update(valmodel.3,formula=.~.+Att.Garage)
+summary(valmodel.4)
+
+#Re-run
+add1(valmodel.4,scope=.~.+Land.SqFt+Arch.Style+Year.Built+Remodel.Year+Full.Bath+Half.Bath+X..Rooms+X..Beds+FBsmt.Area+Finished.Garden.Area+X1st.Floor.Area+X2nd.Floor.Area,test="F")
+
+##AT THIS POINT, FURTHER ADDITIONS TO THE MODEL ARE INCONSEQUENTIAL BASED ON F-STATISTC
+summary(valmodel.4)
+
+```
+
+
+```{r}
+# distribution of studentized residuals
+sresid <- studres(valmodel.4) 
+hist(sresid, freq=FALSE, 
+   main="Distribution of Studentized Residuals")
+xfit<-seq(min(sresid),max(sresid),length=40) 
+yfit<-dnorm(xfit) 
+lines(xfit, yfit)
+```
+```{r}
+#Evaluate homoscedasticity
+#plot studentized residuals vs. fitted values 
+spreadLevelPlot(valmodel.4)
+```
+```{r}
+#Test for Autocorrelation in the residuals; if present, 
+#may validate standard error measurements) 
+durbinWatsonTest(valmodel.4)
+```
+
+```{r}
+#Evaluate Collinearity
+vif(valmodel.4) # variance inflation factors 
+sqrt(vif(valmodel.4)) > 2 # problem?
+```
+
+```{r}
+#Plot 4 useful residual analysis graphs using ggfortify library:
+autoplot(valmodel.4)
+```
+
+
