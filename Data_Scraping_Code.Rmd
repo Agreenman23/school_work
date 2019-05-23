@@ -1,0 +1,52 @@
+---
+title: "Data_Scraping_Code"
+author: "Alex Greenman"
+date: "March 16, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+library(dplyr)
+library(rvest)
+library(tidyverse)
+library(GGally)
+
+wat<-NULL
+gat<-NULL
+for(i in 1875:2019){
+
+url <- paste0("https://www.whiskybase.com/whiskies/new-releases?style=table&bottle_date_year=", i, "&bottler_id=&brand_id=&vintage_year=&type_id=&itemsforsale=&votes=")
+webpage<-read_html(url)
+
+stated_age_home_page <- html_nodes(webpage,'.text-right:nth-child(3)')
+stated_age_data_hp <- html_text(stated_age_home_page)
+stated_age_data_hp<-stated_age_data_hp[-1]
+
+whiskey_name_home_page <- html_nodes(webpage,'.clickable')
+whiskey_name_data_hp<- html_text(whiskey_name_home_page)
+
+whiskey_name_data_hp<-data.frame(whiskey_name_data_hp)
+stated_age_data_hp<-data.frame(stated_age_data_hp)
+
+wat<-rbind(wat, stated_age_data_hp)
+gat<-rbind(gat, whiskey_name_data_hp)}
+#
+#
+```
+
+```{r}
+library(openxlsx)
+write.xlsx(gat, 'scraped_data_from_R_NAMES.xlsx', sheetName="Sheet2")
+write.xlsx(wat, 'scraped_data_from_R_STATED_AGE.xlsx', sheetName="Sheet1")
+
+```
