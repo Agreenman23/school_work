@@ -1,0 +1,26 @@
+A GUIDE TO THE CONTENTS OF THE POSTGRES FOLDER IN PROJECT 1:
+
+-Indexing_In_Postgres.txt contains the EXPLAIN results, and a writeup of the
+ comparison of before/after indexing in Postgres.
+
+-inventoryinsert.sql contains the data that was inserted into the Postgres
+ Inventory table.
+
+-Postgres_function.sql contains the function needed to track order in Postgres
+ for Bob's Pizzeria.
+
+-postgres_sql_for_project1.sql contains the syntax used to create each table in
+ Postgres along with the syntax that was used to add data into each table. Also contains
+ syntax used to add large amount of orders to Orders table.
+
+-recipe_inv_relation_insert.sql contains the data that was inserted into the Postgres
+ Inventory_Recipe_Relation table.
+
+-recipesinsert.sql contains the data that was inserted into the Postgres
+ Recipes table.
+
+-usersinsert.sql contains the data that was inserted into the Postgres
+ Users table.
+
+-the code used to create data and populate each table was done in python.
+ this code can be found in generate_data.py in the project folder. 

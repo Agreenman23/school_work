@@ -1,0 +1,23 @@
+A GUIDE TO THE CONTENTS OF THE MONGO FOLDER IN PROJECT 1:
+
+-Indexing_In_Mongo.js contains the EXPLAIN results, and a writeup of the
+ comparison of before/after indexing in Mongo.
+
+-mongo_conventions.txt contains an explanation of how the collections, by convention,
+ are used to enforce the organization
+
+-NEWinventoryinsert.js contains the data that was inserted into the Inventory
+ collection.
+
+-test_function_mongo.js contains the function needed to track order in Mongp
+ for Bob's Pizzeria and the syntax to populate the orders table (for loop at the 
+ bottom of the page).
+
+-mongo_code_for_project1.js contains the conventions/syntax used to create each
+ Collection in Mongo along with the load syntax that was used to add data into each collection.
+
+-NEWrecipesinsert.js contains the data that was inserted into the Mongo
+ Recipes collection.
+
+-usersinsert.js contains the data that was inserted into the Mongo
+ Users collection.

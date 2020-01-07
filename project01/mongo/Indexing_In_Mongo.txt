@@ -1,0 +1,421 @@
+First, verify what indexes exist in the  using the following command:
+
+db.Orders.getIndexes()
+
+[
+        {
+                "v" : 2,
+                "key" : {
+                        "_id" : 1
+                },
+                "name" : "_id_",
+                "ns" : "Pizzeria_Bob.Orders"
+        }
+]
+
+Before adjusting the indexing at all, take a look at how a non-complex query on
+the Orders collection performs using the following syntax. The results of these
+queries are pasted below each query:
+
+db.Orders.find({recipe_id: "rec_15"}).explain("executionStats").executionStats
+
+"executionSuccess" : true,
+"nReturned" : 2953,
+"executionTimeMillis" : 37,
+"totalKeysExamined" : 0,
+"totalDocsExamined" : 75006,
+"executionStages" : {
+        "stage" : "COLLSCAN",
+        "filter" : {
+                "recipe_id" : {
+                        "$eq" : "rec_15"
+                }
+        },
+        "nReturned" : 2953,
+        "executionTimeMillisEstimate" : 0,
+        "works" : 75008,
+        "advanced" : 2953,
+        "needTime" : 72054,
+        "needYield" : 0,
+        "saveState" : 586,
+        "restoreState" : 586,
+        "isEOF" : 1,
+        "invalidates" : 0,
+        "direction" : "forward",
+        "docsExamined" : 75006
+}
+}
+
+db.Orders.find({$or: [{recipe_id:"rec_20"}, {recipe_id:"rec_23"}]}).explain("executionStats").executionStats
+
+{
+        "executionSuccess" : true,
+        "nReturned" : 5991,
+        "executionTimeMillis" : 50,
+        "totalKeysExamined" : 0,
+        "totalDocsExamined" : 75006,
+        "executionStages" : {
+                "stage" : "SUBPLAN",
+                "nReturned" : 5991,
+                "executionTimeMillisEstimate" : 0,
+                "works" : 75008,
+                "advanced" : 5991,
+                "needTime" : 69016,
+                "needYield" : 0,
+                "saveState" : 586,
+                "restoreState" : 586,
+                "isEOF" : 1,
+                "invalidates" : 0,
+                "inputStage" : {
+                        "stage" : "COLLSCAN",
+                        "filter" : {
+                                "$or" : [
+                                        {
+                                                "recipe_id" : {
+                                                        "$eq" : "rec_20"
+                                                }
+                                        },
+                                        {
+                                                "recipe_id" : {
+                                                        "$eq" : "rec_23"
+                                                }
+                                        }
+                                ]
+                        },
+                        "nReturned" : 5991,
+                        "executionTimeMillisEstimate" : 0,
+                        "works" : 75008,
+                        "advanced" : 5991,
+                        "needTime" : 69016,
+                        "needYield" : 0,
+                        "saveState" : 586,
+                        "restoreState" : 586,
+                        "isEOF" : 1,
+                        "invalidates" : 0,
+                        "direction" : "forward",
+                        "docsExamined" : 75006
+                }
+        }
+}
+
+As shown above, the simple, non-range query takes 37ms, and the range query
+takes 50ms. Now, using the code below, a hash index is added to the recipe_id field.
+The same queries from above are then rerun, and their results are pasted below each query.
+
+db.Orders.createIndex( { recipe_id: "hashed" } )
+
+db.Orders.find({recipe_id: "rec_15"}).explain("executionStats").executionStats
+
+{
+        "executionSuccess" : true,
+        "nReturned" : 2953,
+        "executionTimeMillis" : 17,
+        "totalKeysExamined" : 2953,
+        "totalDocsExamined" : 2953,
+        "executionStages" : {
+                "stage" : "FETCH",
+                "filter" : {
+                        "recipe_id" : {
+                                "$eq" : "rec_15"
+                        }
+                },
+                "nReturned" : 2953,
+                "executionTimeMillisEstimate" : 0,
+                "works" : 2954,
+                "advanced" : 2953,
+                "needTime" : 0,
+                "needYield" : 0,
+                "saveState" : 23,
+                "restoreState" : 23,
+                "isEOF" : 1,
+                "invalidates" : 0,
+                "docsExamined" : 2953,
+                "alreadyHasObj" : 0,
+                "inputStage" : {
+                        "stage" : "IXSCAN",
+                        "nReturned" : 2953,
+                        "executionTimeMillisEstimate" : 0,
+                        "works" : 2954,
+                        "advanced" : 2953,
+                        "needTime" : 0,
+                        "needYield" : 0,
+                        "saveState" : 23,
+                        "restoreState" : 23,
+                        "isEOF" : 1,
+                        "invalidates" : 0,
+                        "keyPattern" : {
+                                "recipe_id" : "hashed"
+                        },
+                        "indexName" : "recipe_id_hashed",
+                        "isMultiKey" : false,
+                        "isUnique" : false,
+                        "isSparse" : false,
+                        "isPartial" : false,
+                        "indexVersion" : 2,
+                        "direction" : "forward",
+                        "indexBounds" : {
+                                "recipe_id" : [
+                                        "[-186163848509851654, -186163848509851654]"
+                                ]
+                        },
+                        "keysExamined" : 2953,
+                        "seeks" : 1,
+                        "dupsTested" : 0,
+                        "dupsDropped" : 0,
+                        "seenInvalidated" : 0
+                }
+        }
+}
+
+db.Orders.find({$or: [{recipe_id:"rec_20"}, {recipe_id:"rec_23"}]}).explain("executionStats").executionStats
+
+{
+        "executionSuccess" : true,
+        "nReturned" : 5991,
+        "executionTimeMillis" : 16,
+        "totalKeysExamined" : 5993,
+        "totalDocsExamined" : 5991,
+        "executionStages" : {
+                "stage" : "SUBPLAN",
+                "nReturned" : 5991,
+                "executionTimeMillisEstimate" : 0,
+                "works" : 5993,
+                "advanced" : 5991,
+                "needTime" : 1,
+                "needYield" : 0,
+                "saveState" : 46,
+                "restoreState" : 46,
+                "isEOF" : 1,
+                "invalidates" : 0,
+                "inputStage" : {
+                        "stage" : "FETCH",
+                        "filter" : {
+                                "$or" : [
+                                        {
+                                                "recipe_id" : {
+                                                        "$eq" : "rec_20"
+                                                }
+                                        },
+                                        {
+                                                "recipe_id" : {
+                                                        "$eq" : "rec_23"
+                                                }
+                                        }
+                                ]
+                        },
+                        "nReturned" : 5991,
+                        "executionTimeMillisEstimate" : 0,
+                        "works" : 5993,
+                        "advanced" : 5991,
+                        "needTime" : 1,
+                        "needYield" : 0,
+                        "saveState" : 46,
+                        "restoreState" : 46,
+                        "isEOF" : 1,
+                        "invalidates" : 0,
+                        "docsExamined" : 5991,
+                        "alreadyHasObj" : 0,
+                        "inputStage" : {
+                                "stage" : "IXSCAN",
+                                "nReturned" : 5991,
+                                "executionTimeMillisEstimate" : 0,
+                                "works" : 5993,
+                                "advanced" : 5991,
+                                "needTime" : 1,
+                                "needYield" : 0,
+                                "saveState" : 46,
+                                "restoreState" : 46,
+                                "isEOF" : 1,
+                                "invalidates" : 0,
+                                "keyPattern" : {
+                                        "recipe_id" : "hashed"
+                                },
+                                "indexName" : "recipe_id_hashed",
+                                "isMultiKey" : false,
+                                "isUnique" : false,
+                                "isSparse" : false,
+                                "isPartial" : false,
+                                "indexVersion" : 2,
+                                "direction" : "forward",
+                                "indexBounds" : {
+                                        "recipe_id" : [
+                                                "[4452784979388528632, 4452784979388528632]",
+                                                "[7512845451675303442, 7512845451675303442]"
+                                        ]
+                                },
+                                "keysExamined" : 5993,
+                                "seeks" : 2,
+                                "dupsTested" : 0,
+                                "dupsDropped" : 0,
+                                "seenInvalidated" : 0
+                        }
+                }
+        }
+}
+
+
+For the simpler query, the total execution time dropped from 37ms to 17ms,
+and the more complex query dropped from 50ms to 16ms. Adding an index clearly
+helps the performance of queries!
+
+In the interest of completeness, it is worth applying a different type of index on
+recipe_id in the Orders collection. To drop the hash index created above, use the following
+code:
+
+db.Orders.dropIndex( { recipe_id: "hashed" } )
+
+
+Create B-tree index on recipe_id using the following code:
+
+db.Orders.ensureIndex({ recipe_id : 1 })
+
+To see if there is significant performance improvement with the b-tree index,
+rerun the same queries as above and paste their performance results below each.
+
+db.Orders.find({recipe_id: "rec_15"}).explain("executionStats").executionStats
+
+{
+        "executionSuccess" : true,
+        "nReturned" : 2953,
+        "executionTimeMillis" : 7,
+        "totalKeysExamined" : 2953,
+        "totalDocsExamined" : 2953,
+        "executionStages" : {
+                "stage" : "FETCH",
+                "nReturned" : 2953,
+                "executionTimeMillisEstimate" : 0,
+                "works" : 2954,
+                "advanced" : 2953,
+                "needTime" : 0,
+                "needYield" : 0,
+                "saveState" : 23,
+                "restoreState" : 23,
+                "isEOF" : 1,
+                "invalidates" : 0,
+                "docsExamined" : 2953,
+                "alreadyHasObj" : 0,
+                "inputStage" : {
+                        "stage" : "IXSCAN",
+                        "nReturned" : 2953,
+                        "executionTimeMillisEstimate" : 0,
+                        "works" : 2954,
+                        "advanced" : 2953,
+                        "needTime" : 0,
+                        "needYield" : 0,
+                        "saveState" : 23,
+                        "restoreState" : 23,
+                        "isEOF" : 1,
+                        "invalidates" : 0,
+                        "keyPattern" : {
+                                "recipe_id" : 1
+                        },
+                        "indexName" : "recipe_id_1",
+                        "isMultiKey" : false,
+                        "multiKeyPaths" : {
+                                "recipe_id" : [ ]
+                        },
+                        "isUnique" : false,
+                        "isSparse" : false,
+                        "isPartial" : false,
+                        "indexVersion" : 2,
+                        "direction" : "forward",
+                        "indexBounds" : {
+                                "recipe_id" : [
+                                        "[\"rec_15\", \"rec_15\"]"
+                                ]
+                        },
+                        "keysExamined" : 2953,
+                        "seeks" : 1,
+                        "dupsTested" : 0,
+                        "dupsDropped" : 0,
+                        "seenInvalidated" : 0
+                }
+        }
+}
+
+db.Orders.find({$or: [{recipe_id:"rec_20"}, {recipe_id:"rec_23"}]}).explain("executionStats").executionStats
+
+{
+        "executionSuccess" : true,
+        "nReturned" : 5991,
+        "executionTimeMillis" : 11,
+        "totalKeysExamined" : 5993,
+        "totalDocsExamined" : 5991,
+        "executionStages" : {
+                "stage" : "SUBPLAN",
+                "nReturned" : 5991,
+                "executionTimeMillisEstimate" : 1,
+                "works" : 5993,
+                "advanced" : 5991,
+                "needTime" : 1,
+                "needYield" : 0,
+                "saveState" : 46,
+                "restoreState" : 46,
+                "isEOF" : 1,
+                "invalidates" : 0,
+                "inputStage" : {
+                        "stage" : "FETCH",
+                        "nReturned" : 5991,
+                        "executionTimeMillisEstimate" : 1,
+                        "works" : 5993,
+                        "advanced" : 5991,
+                        "needTime" : 1,
+                        "needYield" : 0,
+                        "saveState" : 46,
+                        "restoreState" : 46,
+                        "isEOF" : 1,
+                        "invalidates" : 0,
+                        "docsExamined" : 5991,
+                        "alreadyHasObj" : 0,
+                        "inputStage" : {
+                                "stage" : "IXSCAN",
+                                "nReturned" : 5991,
+                                "executionTimeMillisEstimate" : 0,
+                                "works" : 5993,
+                                "advanced" : 5991,
+                                "needTime" : 1,
+                                "needYield" : 0,
+                                "saveState" : 46,
+                                "restoreState" : 46,
+                                "isEOF" : 1,
+                                "invalidates" : 0,
+                                "keyPattern" : {
+                                        "recipe_id" : 1
+                                },
+                                "indexName" : "recipe_id_1",
+                                "isMultiKey" : false,
+                                "multiKeyPaths" : {
+                                        "recipe_id" : [ ]
+                                },
+                                "isUnique" : false,
+                                "isSparse" : false,
+                                "isPartial" : false,
+                                "indexVersion" : 2,
+                                "direction" : "forward",
+                                "indexBounds" : {
+                                        "recipe_id" : [
+                                                "[\"rec_20\", \"rec_20\"]",
+                                                "[\"rec_23\", \"rec_23\"]"
+                                        ]
+                                },
+                                "keysExamined" : 5993,
+                                "seeks" : 2,
+                                "dupsTested" : 0,
+                                "dupsDropped" : 0,
+                                "seenInvalidated" : 0
+                        }
+                }
+        }
+}
+
+The performance results of the queries with the b-tree index in place are significantly
+better than the results shown with no index in place (37ms to 7ms, 50ms to
+11ms). When compared to the hash index, the b-tree index pretty significantly improves
+the performance of the simple, non-ranged query (17ms to 7ms). The ranged query also
+performed significantly better with the b-tree index than with the (16ms to 11ms). These gulfs in
+performance would become more substantial if there were more orders in the orders table.
+On the contrary, the gains in performance would be lessened if there were a higher number of
+recipe_ids; 25 is a small number and is a large reason why the queries are currently performant.
+If that number were to jump up to 2500, I believe the query performance will suffer, and it would be interesting
+to rerun the above queries with both the b-tree and hash indexes in place to see which one
+improves performance the most (likely the b-tree index based on the above results).

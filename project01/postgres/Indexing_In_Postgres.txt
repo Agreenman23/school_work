@@ -1,0 +1,126 @@
+First, verify what indexes exist in each table using the following command (code
+derived from http://www.postgresqltutorial.com/postgresql-indexes/postgresql-list-indexes/):
+
+SELECT
+    tablename,
+    indexname,
+    indexdef
+FROM
+    pg_indexes;
+
+This command shows that there are primary key indexes for each table, and that's
+it:
+
+users     | users_pkey     | CREATE UNIQUE INDEX users_pkey ON public.users USING btree (user_id)
+inventory | inventory_pkey | CREATE UNIQUE INDEX inventory_pkey ON public.inventory USING btree (ingredient_id)
+recipes   | recipes_pkey   | CREATE UNIQUE INDEX recipes_pkey ON public.recipes USING btree (recipe_id)
+orders    | orders_pkey    | CREATE UNIQUE INDEX orders_pkey ON public.orders USING btree (order_id)
+
+In order to create baseline metrics on query speed that can be used for comparisons,
+a few queries are run below (using recipe_id) with the indexes remaining as illustrated above.
+The results of these queries are pasted below each query.
+
+EXPLAIN ANALYZE SELECT * FROM Orders WHERE recipe_id = 23;
+
+QUERY PLAN
+----------------------------------------------------------------------------------------------------------
+Seq Scan on orders  (cost=0.00..1100.12 rows=2415 width=20) (actual time=0.014..6.982 rows=2343 loops=1)
+Filter: (recipe_id = 23)
+Rows Removed by Filter: 55907
+Planning Time: 0.060 ms
+Execution Time: 8.123 ms
+
+EXPLAIN ANALYZE SELECT * FROM Orders WHERE recipe_id < 23 AND recipe_id > 12;
+
+QUERY PLAN
+-------------------------------------------------------------------------------------------------------------
+Seq Scan on orders  (cost=0.00..1245.75 rows=23319 width=20) (actual time=0.011..28.438 rows=23247 loops=1)
+Filter: ((recipe_id < 23) AND (recipe_id > 12))
+Rows Removed by Filter: 35003
+Planning Time: 0.058 ms
+Execution Time: 40.983 ms
+(5 rows)
+
+As shown above, the simple, non-range query takes 8.123ms, and the range query
+takes 40.983 ms. Now, using the code below (taken from Postgres Lecture 2), a hash
+index is added to the recipe_id column. The same queries from above are then rerun,
+and their results are pasted below each query.
+
+CREATE INDEX orders_recipe_id_index ON orders USING hash (recipe_id);
+
+EXPLAIN ANALYZE SELECT * FROM Orders WHERE recipe_id = 23;
+
+QUERY PLAN
+--------------------------------------------------------------------------------------------------------------------------------------
+Bitmap Heap Scan on orders  (cost=82.72..484.90 rows=2415 width=20) (actual time=0.142..3.948 rows=2343 loops=1)
+Recheck Cond: (recipe_id = 23)
+Heap Blocks: exact=371
+->  Bitmap Index Scan on orders_recipe_id_index  (cost=0.00..82.11 rows=2415 width=0) (actual time=0.103..0.104 rows=2343 loops=1)
+Index Cond: (recipe_id = 23)
+Planning Time: 0.089 ms
+Execution Time: 5.331 ms
+
+EXPLAIN ANALYZE SELECT * FROM Orders WHERE recipe_id < 23 AND recipe_id > 12;
+
+QUERY PLAN
+-------------------------------------------------------------------------------------------------------------
+Seq Scan on orders  (cost=0.00..1245.75 rows=23319 width=20) (actual time=0.013..17.170 rows=23247 loops=1)
+Filter: ((recipe_id < 23) AND (recipe_id > 12))
+Rows Removed by Filter: 35003
+Planning Time: 0.097 ms
+Execution Time: 27.622 ms
+(5 rows)
+
+For the simpler query, the total execution time dropped from 8.123ms to 5.331ms,
+and the more complex query dropped from 40.983ms to 27.622ms. Adding an index clearly
+helps the performance of queries!
+
+In the interest of completeness, it is worth applying a different type of index on
+recipe_id in the Orders table. To drop the hash index created above, use the following
+code:
+
+DROP INDEX orders_recipe_id_index;
+
+
+Create B-tree index on recipe_id using the following code (taken from Postgres Lecture 2):
+
+CREATE INDEX orders_recipe_id_index ON orders USING btree (recipe_id);
+
+To see if there is significant performance improvement with the b-tree index,
+rerun the same queries as above and paste their performance results below each.
+
+EXPLAIN ANALYZE SELECT * FROM Orders WHERE recipe_id = 23;
+
+QUERY PLAN
+--------------------------------------------------------------------------------------------------------------------------------------
+Bitmap Heap Scan on orders  (cost=47.01..449.19 rows=2415 width=20) (actual time=0.296..2.292 rows=2343 loops=1)
+Recheck Cond: (recipe_id = 23)
+Heap Blocks: exact=371
+->  Bitmap Index Scan on orders_recipe_id_index  (cost=0.00..46.40 rows=2415 width=0) (actual time=0.245..0.245 rows=2343 loops=1)
+Index Cond: (recipe_id = 23)
+Planning Time: 0.179 ms
+Execution Time: 3.500 ms
+
+EXPLAIN ANALYZE SELECT * FROM Orders WHERE recipe_id < 23 AND recipe_id > 12;
+
+QUERY PLAN
+-----------------------------------------------------------------------------------------------------------------------------------------
+Bitmap Heap Scan on orders  (cost=499.31..1221.09 rows=23319 width=20) (actual time=2.329..16.764 rows=23247 loops=1)
+Recheck Cond: ((recipe_id < 23) AND (recipe_id > 12))
+Heap Blocks: exact=372
+->  Bitmap Index Scan on orders_recipe_id_index  (cost=0.00..493.48 rows=23319 width=0) (actual time=2.271..2.272 rows=23247 loops=1)
+Index Cond: ((recipe_id < 23) AND (recipe_id > 12))
+Planning Time: 0.135 ms
+Execution Time: 27.631 ms
+
+The performance results of the queries with the b-tree index in place are significantly
+better than the results shown with no index in place (8.123ms to 3.500ms, 40.983ms to
+27.631ms). When compared to the hash index, the b-tree index pretty significantly improves
+the performance of the simple, non-ranged query (5.331ms to 3.5ms). The ranged query did not
+perform significantly better with the b-tree index than with the hash index. These gulfs in
+performance would become more substantial if there were more orders in the orders table.
+On the contrary, the gains in performance would be lessened if there were a higher number of
+recipe_ids; 25 is a small number and is a large reason why the queries are currently performant.
+If that number were to jump up to 2500, the query performance will suffer, and it would be interesting
+to rerun the above queries with both the b-tree and hash indexes in place to see which one
+improves performance the most (likely the hash index).
