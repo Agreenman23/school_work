@@ -1,0 +1,284 @@
+--POSTGRES QUERIES FOR A PATIENT'S DOCTORS, ILLNESSES, AND TREATMENTS--
+
+--Query to return a patient's doctors:
+
+SELECT p.patient_name,
+     pd.patient_id,
+     pd.treating_doctor_id,
+     d.doctor_name
+FROM   patients p
+     INNER JOIN patient_doctor_relation pd
+             ON p.patient_id = pd.patient_id
+     INNER JOIN doctors d
+             ON pd.treating_doctor_id = d.doctor_id
+WHERE  pd.patient_id = 1008;
+
+
+patient_name | patient_id | treating_doctor_id |      doctor_name
+--------------+------------+--------------------+-----------------------
+Lisa Wu      |       1008 |                 74 | Dr. Reginald Martinez
+
+
+--In the case where a patient is also a doctor, query to return the patient's
+--doctors:
+
+SELECT p.patient_name,
+     pd.patient_id,
+     pd.treating_doctor_id,
+     d.doctor_name
+FROM   patients p
+     INNER JOIN patient_doctor_relation pd
+             ON p.patient_id = pd.patient_id
+     INNER JOIN doctors d
+             ON pd.treating_doctor_id = d.doctor_id
+WHERE  pd.patient_id = 11;
+
+patient_name    | patient_id | treating_doctor_id |   doctor_name
+-------------------+------------+--------------------+-----------------
+Dr. Desiree Allen |         11 |                 24 | Dr. Diane Scott
+Dr. Desiree Allen |         11 |                 60 | Dr. Sara Moody
+
+--Query to return a patient's illnesses:
+
+SELECT p.patient_name,
+     pil.patient_id,
+     i.illness_name
+FROM   patients p
+     INNER JOIN patient_illness_relation pil
+             ON p.patient_id = pil.patient_id
+     INNER JOIN illness i
+             ON pil.illness_id = i.illness_id
+WHERE  pil.patient_id = 1008;
+
+patient_name | patient_id | illness_name
+--------------+------------+--------------
+Lisa Wu      |       1008 | illness_87
+
+--In the case where a patient is also a doctor, query to return the patient's
+--illnesses:
+
+SELECT p.patient_name,
+     pil.patient_id,
+     i.illness_name
+FROM   patients p
+     INNER JOIN patient_illness_relation pil
+             ON p.patient_id = pil.patient_id
+     INNER JOIN illness i
+             ON pil.illness_id = i.illness_id
+WHERE  pil.patient_id = 11;
+
+patient_name    | patient_id | illness_name
+-------------------+------------+--------------
+Dr. Desiree Allen |         11 | illness_60
+
+--Query to return a patient's treatments:
+
+SELECT p.patient_name,
+     pt.patient_id,
+     t.treatment_name
+FROM   patients p
+     INNER JOIN patient_treatment_relation pt
+             ON p.patient_id = pt.patient_id
+     INNER JOIN treatment t
+             ON pt.treatment_id = t.treatment_id
+WHERE  pt.patient_id = 1008;
+
+patient_name | patient_id |   treatment_name
+--------------+------------+--------------------
+Lisa Wu      |       1008 | Magical_Beans_1500
+
+--In the case where a patient is also a doctor, query to return the patient's
+--treatments:
+
+SELECT p.patient_name,
+     pt.patient_id,
+     t.treatment_name
+FROM   patients p
+     INNER JOIN patient_treatment_relation pt
+             ON p.patient_id = pt.patient_id
+     INNER JOIN treatment t
+             ON pt.treatment_id = t.treatment_id
+WHERE  pt.patient_id = 11;
+
+patient_name    | patient_id |  treatment_name
+-------------------+------------+------------------
+Dr. Desiree Allen |         11 | Magical_Beans_13
+
+--To return all patient information in one query:
+select pd.patient_id, pd.treating_doctor_id, pill.illness_id, pt.treatment_id
+from Patient_Doctor_Relation pd, Patient_Illness_Relation pill, Patient_Treatment_Relation pt, Patients p
+where pd.patient_id=1008 and pill.patient_id=1008 and pt.patient_id=1008 and p.patient_id=1008;
+
+patient_id | treating_doctor_id | illness_id | treatment_id
+------------+--------------------+------------+--------------
+      1008 |                 74 |         87 |         1500
+
+--To return all patient information in one query for a patient who is also a doctor:
+select pd.patient_id, pd.treating_doctor_id, pill.illness_id, pt.treatment_id
+from Patient_Doctor_Relation pd, Patient_Illness_Relation pill, Patient_Treatment_Relation pt, Patients p
+where pd.patient_id=11 and pill.patient_id=11 and pt.patient_id=11 and p.patient_id=11;
+
+patient_id | treating_doctor_id | illness_id | treatment_id
+------------+--------------------+------------+--------------
+        11 |                 24 |         60 |           13
+        11 |                 60 |         60 |           13
+
+--Because the above query returns the id numbers associated with the patient's
+--doctors, illnesses, and treatments, I wanted to provide a way to obtain the
+--names associated with each one of those id numbers. In order to do so, you
+--must first create 3 views, and then run a query that includes those views
+--in it.
+
+CREATE VIEW doc_names AS
+select p.patient_ID as pat_id, d.doctor_name as doc_name from Patients p, Patient_Doctor_Relation pd, Doctors d
+where p.patient_id = pd.patient_id and pd.treating_doctor_id = d.doctor_id;
+
+CREATE VIEW illness_names AS
+select p.patient_ID as pat_id, i.illness_name as ill_name from Patients p, Patient_Illness_Relation pill, Illness i
+where p.patient_id = pill.patient_id and pill.illness_id = i.illness_id;
+
+CREATE VIEW treatment_names AS
+select p.patient_ID as pat_id, t.treatment_name as tr_name from Patients p, Patient_Treatment_Relation pt, Treatment t
+where p.patient_id = pt.patient_id and pt.treatment_id = t.treatment_id;
+
+--Query to get just names for patient
+select p.patient_name, dn.doc_name, illn.ill_name, tn.tr_name
+from Patient_Illness_Relation pill, Patients p, doc_names dn, illness_names illn, treatment_names tn
+where pill.patient_id=1008 and p.patient_id=1008 and dn.pat_id=1008 and illn.pat_id=1008 and tn.pat_id=1008;
+
+patient_name |       doc_name        |  ill_name  |      tr_name
+--------------+-----------------------+------------+--------------------
+Lisa Wu      | Dr. Reginald Martinez | illness_87 | Magical_Beans_1500
+
+--Query to get just names for patient that is a doctor
+select p.patient_name, dn.doc_name, illn.ill_name, tn.tr_name
+from Patient_Illness_Relation pill, Patients p, doc_names dn, illness_names illn, treatment_names tn
+where pill.patient_id=11 and p.patient_id=11 and dn.pat_id=11 and illn.pat_id=11 and tn.pat_id=11;
+
+patient_name    |    doc_name     |  ill_name  |     tr_name
+-------------------+-----------------+------------+------------------
+Dr. Desiree Allen | Dr. Diane Scott | illness_60 | Magical_Beans_13
+Dr. Desiree Allen | Dr. Sara Moody  | illness_60 | Magical_Beans_13
+
+--NEO4j QUERIES FOR A PATIENT'S DOCTORS, ILLNESSES, AND TREATMENTS--
+
+*These Cypher queries are modeled after the ones covered in Lecture 11, slide 6.
+*I have queried information about the same patients as I did in Postgres to ensure
+that the data matches up.
+*These queries were ran Neo4j's web admin tool/data browser
+
+--Query to return a patient's doctors:
+
+MATCH (p:Patient {patientID: "1008"})<-->(other:Doctor)
+RETURN other;
+
+{
+  "doctorID": "74",
+  "doctorName": "Dr. Reginald Martinez"
+}
+
+--In the case where a patient is also a doctor, query to return the patient's
+--doctors:
+
+MATCH (p:PatientDoctor {patientID: "11"})<-->(other:Doctor)
+RETURN other;
+
+{
+  "doctorID": "24",
+  "doctorName": "Dr. Diane Scott"
+}
+{
+  "doctorID": "60",
+  "doctorName": "Dr. Sara Moody"
+}
+
+--Query to return a patient's illnesses:
+
+MATCH (p:Patient {patientID: "1008"})<-->(other:Illness)
+RETURN other;
+
+{
+  "illnessID": "87",
+  "illnessName": "illness_87"
+}
+
+--In the case where a patient is also a doctor, query to return the patient's
+--illnesses:
+
+MATCH (p:PatientDoctor {patientID: "11"})<-->(other:Illness)
+RETURN other;
+
+{
+  "illnessID": "60",
+  "illnessName": "illness_60"
+}
+
+--Query to return a patient's treatments:
+
+MATCH (p:Patient {patientID: "1008"})<-->(other:Treatment)
+RETURN other;
+
+{
+  "treatmentID": "1500",
+  "treatmentName": "Magical_Beans_1500"
+}
+
+--In the case where a patient is also a doctor, query to return the patient's
+--treatments:
+
+MATCH (p:PatientDoctor {patientID: "11"})<-->(other:Treatment)
+RETURN other;
+
+{
+  "treatmentID": "13",
+  "treatmentName": "Magical_Beans_13"
+}
+
+--To return all patient information in one query:
+
+MATCH (p:Patient {patientID: "1008"})<-->(n)
+RETURN n;
+
+{
+  "treatmentID": "1500",
+  "treatmentName": "Magical_Beans_1500"
+}
+{
+  "illnessID": "87",
+  "illnessName": "illness_87"
+}
+{
+  "doctorID": "74",
+  "doctorName": "Dr. Reginald Martinez"
+}
+
+--To return all patient information in one query for a patient who is also a doctor:
+
+MATCH (p:PatientDoctor {patientID: "11"})<-->(n)
+RETURN n;
+
+{
+  "treatmentID": "13",
+  "treatmentName": "Magical_Beans_13"
+}
+{
+  "illnessID": "60",
+  "illnessName": "illness_60"
+}
+{
+  "doctorID": "24",
+  "doctorName": "Dr. Diane Scott"
+}
+{
+  "doctorID": "60",
+  "doctorName": "Dr. Sara Moody"
+}
+
+As illustrated above, each query returns the same data from both Postgres and
+Neo4j for each patient, which is how it should be. For both Postgres and Neo4j,
+it is possible to return all of this information in one query. The query to
+accomplish this in Neo4j is much less involved than the equivalent query in
+Postgres. From a performance standpoint, both the Cypher and Postgres queries
+took a split second, so there is no standout there. For these queries, I
+preferred Cypher's quick and intuitive nature over Postgres's more verbose
+(but reliable) query style that involves joins and views.

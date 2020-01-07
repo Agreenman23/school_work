@@ -1,0 +1,138 @@
+To access Neo4j (after running docker-compose up):
+docker exec -it nosql-neo4j /bin/bash
+
+To access the Cypher Shell:
+/var/lib/neo4j/bin/cypher-shell
+
+
+To dump data from Postgres to CSVs, use the following syntax in the Postgres
+shell:
+
+COPY (SELECT * FROM Patients) TO '/app/postgres/examples/Patients.csv' WITH CSV header;
+COPY (SELECT * FROM Doctors) TO '/app/postgres/examples/Doctors.csv' WITH CSV header;
+COPY (SELECT * FROM Illness) TO '/app/postgres/examples/Illness.csv' WITH CSV header;
+COPY (SELECT * FROM Treatment) TO '/app/postgres/examples/Treatment.csv' WITH CSV header;
+COPY (SELECT * FROM Patient_Doctor_Relation) TO '/app/postgres/examples/Patient_Doctor_Relation.csv' WITH CSV header;
+COPY (SELECT * FROM Patient_Illness_Relation) TO '/app/postgres/examples/Patient_Illness_Relation.csv' WITH CSV header;
+COPY (SELECT * FROM Patient_Treatment_Relation) TO '/app/postgres/examples/Patient_Treatment_Relation.csv' WITH CSV header;
+
+I then moved these CSVs to the project folder so that they could be accessed
+by NEO4j.
+
+To point shell directory at import folder in Neo4j:
+root@nosql-neo4j:/var/lib/neo4j# cp /app/neo4j/projects/project02/[file_name.csv] /var/lib/neo4j/import
+
+Schema/Relationship creation:
+
+Before loading data into Neo4j, a relationship mapping needed to be created.
+The mapping that I decided would be sufficient follows the mapping in the project
+description.
+- A Doctor 'sees' Patients (patients can be doctors, but a doctor can't see himself/herself)
+- A Patient 'has' an Illness
+- A Patient 'receives' a Treatment
+- A Doctor 'has' an Illness
+- A Doctor 'receives' Treatment
+
+Because I utilized Postgres's serial feature, each of my CSV exports had a column
+that contains incremented integers. I deleted the incremented integers from the
+Patient_Doctor_Relation, Patient_Illness_Relation, and Patient_Treatment_Relation
+tables, as they were superfluous. These integers would've been extra nodes that
+wouldn't have added anything to the 'schema' that I needed to create in Neo4j.
+For the same reason, I also deleted the 'comments' column from the treatments
+table.
+
+I also separated doctors into their own patient category (doctors_getting_treatment,
+doctors_with_illnesses, patient_doctors, doctors_seeing_doctors), as it would be easier
+to have them as separate nodes rather than rely on attributes of the patient
+nodes to distinguish them.
+
+In order to build the database, I needed to load the doctor, patient,
+illness, and treatment information. Relationships exist between these nodes, so
+they needed to be created first.
+
+I first loaded the doctors, patients, illnesses, and treatment
+data, and then created the required relationships with the following syntax:
+
+
+--To create Doctor nodes:
+root@nosql-neo4j:/var/lib/neo4j# cp /app/neo4j/projects/project02/Doctors.csv /var/lib/neo4j/import
+root@nosql-neo4j:/var/lib/neo4j# /var/lib/neo4j/bin/cypher-shell
+LOAD CSV WITH HEADERS FROM "file:///Doctors.csv" AS row
+CREATE (:Doctor {doctorID: row.doctor_id, doctorName: row.doctor_name});
+
+--To create Patient nodes:
+root@nosql-neo4j:/var/lib/neo4j# cp /app/neo4j/projects/project02/Patients.csv /var/lib/neo4j/import
+root@nosql-neo4j:/var/lib/neo4j# /var/lib/neo4j/bin/cypher-shell
+LOAD CSV WITH HEADERS FROM "file:///Patients.csv" AS row
+CREATE (:Patient {patientID: row.patient_id, patientName: row.patient_name});
+
+--To create PatientDoctor nodes:
+root@nosql-neo4j:/var/lib/neo4j# cp /app/neo4j/projects/project02/Patient_Doctors.csv /var/lib/neo4j/import
+root@nosql-neo4j:/var/lib/neo4j# /var/lib/neo4j/bin/cypher-shell
+LOAD CSV WITH HEADERS FROM "file:///Patient_Doctors.csv" AS row
+CREATE (:PatientDoctor {patientID: row.patient_id, patientName: row.patient_name});
+
+--To create Illness nodes:
+root@nosql-neo4j:/var/lib/neo4j# cp /app/neo4j/projects/project02/Illness.csv /var/lib/neo4j/import
+root@nosql-neo4j:/var/lib/neo4j# /var/lib/neo4j/bin/cypher-shell
+LOAD CSV WITH HEADERS FROM "file:///Illness.csv" AS row
+CREATE (:Illness {illnessID: row.illness_id, illnessName: row.illness_name});
+
+--To create Treatment nodes:
+root@nosql-neo4j:/var/lib/neo4j# cp /app/neo4j/projects/project02/Treatment.csv /var/lib/neo4j/import
+root@nosql-neo4j:/var/lib/neo4j# /var/lib/neo4j/bin/cypher-shell
+LOAD CSV WITH HEADERS FROM "file:///Treatment.csv" AS row
+CREATE (:Treatment {treatmentID: row.treatment_id, treatmentName: row.treatment_name});
+
+--To create relationship between doctors and non-doctor patients:
+LOAD CSV WITH HEADERS FROM "file:///Patient_Doctor_Relation.csv" AS row
+root@nosql-neo4j:/var/lib/neo4j# cp /app/neo4j/projects/project02/Patient_Doctor_Relation.csv /var/lib/neo4j/import
+root@nosql-neo4j:/var/lib/neo4j# /var/lib/neo4j/bin/cypher-shell
+MATCH (p:Patient {patientID: row.patient_id})
+MATCH (d:Doctor {doctorID: row.doctor_id})
+MERGE (d)-[:SEES]->(p);
+
+--To create relationship between doctors and doctor patients--
+root@nosql-neo4j:/var/lib/neo4j# cp /app/neo4j/projects/project02/doctors_seeing_doctors.csv /var/lib/neo4j/import
+root@nosql-neo4j:/var/lib/neo4j# /var/lib/neo4j/bin/cypher-shell
+LOAD CSV WITH HEADERS FROM "file:///doctors_seeing_doctors.csv" AS row
+MATCH (p:PatientDoctor {patientID: row.patient_id})
+MATCH (d:Doctor {doctorID: row.doctor_id})
+MERGE (d)-[:SEES]->(p);
+
+--To create relationship between patients and illnesses:
+root@nosql-neo4j:/var/lib/neo4j# cp /app/neo4j/projects/project02/Patient_Illness_Relation.csv /var/lib/neo4j/import
+root@nosql-neo4j:/var/lib/neo4j# /var/lib/neo4j/bin/cypher-shell
+LOAD CSV WITH HEADERS FROM "file:///Patient_Illness_Relation.csv" AS row
+MATCH (p:Patient {patientID: row.patient_id})
+MATCH (i:Illness {illnessID: row.illness_id})
+MERGE (p)-[:HAS]->(i);
+
+--To create relationship between patientdoctors and illnesses:
+root@nosql-neo4j:/var/lib/neo4j# cp /app/neo4j/projects/project02/doctors_with_illnesses.csv /var/lib/neo4j/import
+root@nosql-neo4j:/var/lib/neo4j# /var/lib/neo4j/bin/cypher-shell
+LOAD CSV WITH HEADERS FROM "file:///doctors_with_illnesses.csv" AS row
+MATCH (p:PatientDoctor {patientID: row.patient_id})
+MATCH (i:Illness {illnessID: row.illness_id})
+MERGE (p)-[:HAS]->(i);
+
+--To create relationship between patients and treatments:
+root@nosql-neo4j:/var/lib/neo4j# cp /app/neo4j/projects/project02/Patient_Treatment_Relation.csv /var/lib/neo4j/import
+root@nosql-neo4j:/var/lib/neo4j# /var/lib/neo4j/bin/cypher-shell
+LOAD CSV WITH HEADERS FROM "file:///Patient_Treatment_Relation.csv" AS row
+MATCH (p:Patient {patientID: row.patient_id})
+MATCH (t:Treatment {treatmentID: row.treatment_id})
+MERGE (p)-[:RECEIVES]->(t);
+
+--To create relationship between patientdoctors and treatments:
+root@nosql-neo4j:/var/lib/neo4j# cp /app/neo4j/projects/project02/doctors_getting_treatments.csv /var/lib/neo4j/import
+root@nosql-neo4j:/var/lib/neo4j# /var/lib/neo4j/bin/cypher-shell
+LOAD CSV WITH HEADERS FROM "file:///doctors_getting_treatments.csv" AS row
+MATCH (p:PatientDoctor {patientID: row.patient_id})
+MATCH (t:Treatment {treatmentID: row.treatment_id})
+MERGE (p)-[:RECEIVES]->(t);
+
+
+SOURCES:
+https://neo4j.com/developer/guide-importing-data-and-etl/
+https://neo4j.com/developer/guide-import-csv/

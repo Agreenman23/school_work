@@ -1,0 +1,278 @@
+1.) How many doctors are treating doctors?
+
+*To see how many doctors are treating doctors, run query below:
+
+MATCH (p:PatientDoctor)<--(other:Doctor)
+WHERE NOT other:Patient RETURN COUNT(DISTINCT other);
+
+╒═══════════════════════╕
+│"COUNT(DISTINCT other)"│
+╞═══════════════════════╡
+│69                     │
+└───────────────────────┘
+
+*To get all doctors that 'see' other doctors, including ids and names, run query:
+
+MATCH (p:PatientDoctor)<--(other:Doctor)
+WHERE NOT other:Patient RETURN DISTINCT other;
+
+
+╒══════════════════════════════════════════════════════════╕
+│"other"                                                   │
+╞══════════════════════════════════════════════════════════╡
+│{"doctorID":"34","doctorName":"Dr. John Dean"}            │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"70","doctorName":"Dr. Natalie Leonard"}      │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"69","doctorName":"Dr. Glenn Murillo PhD"}    │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"33","doctorName":"Dr. Shelly Hawkins"}       │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"32","doctorName":"Dr. Taylor Rhodes"}        │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"68","doctorName":"Dr. Amanda Vargas"}        │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"31","doctorName":"Dr. Michael Schultz"}      │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"67","doctorName":"Dr. Alison Perez"}         │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"66","doctorName":"Dr. James Davis"}          │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"30","doctorName":"Dr. Jodi Tate"}            │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"65","doctorName":"Dr. Miguel Aguirre"}       │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"29","doctorName":"Dr. Rebecca Anderson"}     │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"64","doctorName":"Dr. Ian Kelly"}            │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"28","doctorName":"Dr. Brandi Huffman"}       │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"63","doctorName":"Dr. Christopher Wilkins"}  │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"27","doctorName":"Dr. Patrick Chandler"}     │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"62","doctorName":"Dr. Brian Cantrell"}       │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"26","doctorName":"Dr. James Lawson"}         │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"61","doctorName":"Dr. Patrick Ward"}         │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"25","doctorName":"Dr. Madison Williams"}     │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"24","doctorName":"Dr. Diane Scott"}          │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"60","doctorName":"Dr. Sara Moody"}           │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"23","doctorName":"Dr. Scott Rogers"}         │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"59","doctorName":"Dr. James Soto"}           │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"22","doctorName":"Dr. Brenda Huff"}          │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"58","doctorName":"Dr. Carmen Ramirez"}       │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"57","doctorName":"Dr. Shelly Meza"}          │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"21","doctorName":"Dr. Duane Medina"}         │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"56","doctorName":"Dr. Kari Fletcher"}        │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"20","doctorName":"Dr. Brandon Sims"}         │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"55","doctorName":"Dr. John Griffin"}         │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"19","doctorName":"Dr. Martin Waters"}        │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"54","doctorName":"Dr. Emily Perry"}          │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"18","doctorName":"Dr. Laura Robertson"}      │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"17","doctorName":"Dr. Rachel West"}          │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"53","doctorName":"Dr. Cameron Mitchell"}     │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"16","doctorName":"Dr. Tom Chavez"}           │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"52","doctorName":"Dr. Michael Lawrence"}     │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"15","doctorName":"Dr. David Stanley"}        │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"51","doctorName":"Dr. Juan Eaton"}           │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"50","doctorName":"Dr. Crystal Floyd"}        │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"14","doctorName":"Dr. Dr. Jonathan Santiago"}│
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"49","doctorName":"Dr. Anthony Hudson Jr."}   │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"13","doctorName":"Dr. Roger Hernandez"}      │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"48","doctorName":"Dr. Monica Barber"}        │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"12","doctorName":"Dr. Danny Foley"}          │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"11","doctorName":"Dr. Desiree Allen"}        │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"47","doctorName":"Dr. Kyle Lee"}             │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"10","doctorName":"Dr. Andrew Burns"}         │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"46","doctorName":"Dr. Robert Whitney"}       │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"45","doctorName":"Dr. Robert Larsen"}        │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"9","doctorName":"Dr. Steven Decker"}         │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"44","doctorName":"Dr. Isaac Robles"}         │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"8","doctorName":"Dr. Brian Cooley"}          │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"43","doctorName":"Dr. Katherine Trujillo"}   │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"7","doctorName":"Dr. Melinda Vargas"}        │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"42","doctorName":"Dr. William Smith"}        │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"6","doctorName":"Dr. Andrew Cooper"}         │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"41","doctorName":"Dr. Dennis Yoder"}         │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"5","doctorName":"Dr. Kevin Oconnor"}         │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"4","doctorName":"Dr. Cassandra Smith"}       │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"40","doctorName":"Dr. Samantha Taylor"}      │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"39","doctorName":"Dr. Peter Black"}          │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"3","doctorName":"Dr. Kayla Warren"}          │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"2","doctorName":"Dr. Michelle Carter"}       │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"38","doctorName":"Dr. Beth Phillips"}        │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"1","doctorName":"Dr. Daniel Flores"}         │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"37","doctorName":"Dr. Jorge Smith"}          │
+├──────────────────────────────────────────────────────────┤
+│{"doctorID":"36","doctorName":"Dr. Stephen Hughes"}       │
+└──────────────────────────────────────────────────────────┘
+2.) What's the count of how many patients have each kind of illness?
+
+MATCH (p:Patient)-[:HAS]->(i:Illness)
+WITH i.illnessID as illnesses,count(p.patientName) as total_pat_count
+RETURN illnesses,total_pat_count
+ORDER BY total_pat_count DESC;
+
+Top 10
+╒═══════════╤═════════════════╕
+│"illnesses"│"total_pat_count"│
+╞═══════════╪═════════════════╡
+│"773"      │28               │
+├───────────┼─────────────────┤
+│"319"      │26               │
+├───────────┼─────────────────┤
+│"931"      │26               │
+├───────────┼─────────────────┤
+│"78"       │25               │
+├───────────┼─────────────────┤
+│"158"      │25               │
+├───────────┼─────────────────┤
+│"380"      │25               │
+├───────────┼─────────────────┤
+│"665"      │25               │
+├───────────┼─────────────────┤
+│"914"      │25               │
+├───────────┼─────────────────┤
+│"954"      │25               │
+├───────────┼─────────────────┤
+│"17"       │24               │
+├───────────┼─────────────────┤
+
+
+Bottom 10
+
+───────────┼─────────────────┤
+│"929"      │7                │
+├───────────┼─────────────────┤
+│"943"      │7                │
+├───────────┼─────────────────┤
+│"210"      │6                │
+├───────────┼─────────────────┤
+│"336"      │6                │
+├───────────┼─────────────────┤
+│"750"      │6                │
+├───────────┼─────────────────┤
+│"829"      │6                │
+├───────────┼─────────────────┤
+│"224"      │5                │
+├───────────┼─────────────────┤
+│"255"      │5                │
+├───────────┼─────────────────┤
+│"651"      │4                │
+├───────────┼─────────────────┤
+│"959"      │3                │
+└───────────┴─────────────────┘
+
+3.) What's the doctor with the most patients?
+
+MATCH (d:Doctor)-[r:SEES]->(p:Patient)
+RETURN d.doctorID as docID, count(distinct p) AS num
+ORDER BY num desc
+limit 5;
+
+╒═══════╤═════╕
+│"docID"│"num"│
+╞═══════╪═════╡
+│"32"   │288  │
+├───────┼─────┤
+│"55"   │288  │
+├───────┼─────┤
+│"39"   │283  │
+├───────┼─────┤
+│"97"   │278  │
+├───────┼─────┤
+│"37"   │276  │
+└───────┴─────┘
+
+Doctors 32 and 55 see the most patients
+
+4.) Which doctor is treating the largest number of unique illnesses?
+
+MATCH (d:Doctor)-[:SEES]-(p:Patient)-[:HAS]-(i:Illness)
+WITH d.doctorID as docID, count(distinct i) as num
+RETURN num as number_of_ills_treated, docID
+ORDER BY num DESC LIMIT 3;
+
+╒════════════════════════╤═══════╕
+│"number_of_ills_treated"│"docID"│
+╞════════════════════════╪═══════╡
+│358                     │"46"   │
+├────────────────────────┼───────┤
+│349                     │"14"   │
+├────────────────────────┼───────┤
+│348                     │"32"   │
+└────────────────────────┴───────┘
+
+Doctor 46 treats the most unique illnesses
+
+
+5.) What illness is being treated with the largest number of unique treatments?
+
+MATCH (i:Illness)-[h:HAS]-(p:Patient)-[r:RECEIVES]-(t:Treatment)
+WITH i.illnessID as IllnessID, count(distinct t) as total_treatments
+RETURN IllnessID, total_treatments
+ORDER BY total_treatments DESC LIMIT 3;
+
+╒═══════════╤══════════════════╕
+│"IllnessID"│"total_treatments"│
+╞═══════════╪══════════════════╡
+│"319"      │68                │
+├───────────┼──────────────────┤
+│"773"      │65                │
+├───────────┼──────────────────┤
+│"473"      │62                │
+└───────────┴──────────────────┘
+
+Illness 319 is being treated with the largest number of unique treatments
